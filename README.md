@@ -39,6 +39,7 @@ SELECT subscription_type AS Tipo_Suscripcion, COUNT(*) AS Total_Usuarios, CAST(C
 FROM netflix_customers
 GROUP BY subscription_type;
 ````
+<img width="332" height="76" alt="ask1" src="https://github.com/user-attachments/assets/8e16c8d6-30a4-4a03-a915-226c469d290f" />
 
 
 
@@ -51,6 +52,7 @@ FROM netflix_customers
 GROUP BY region
 ORDER BY Tarifa_Promedio DESC;
 ````
+<img width="300" height="136" alt="ask2" src="https://github.com/user-attachments/assets/bd38e3f4-bfe3-40f3-8c0b-45bd85f5304c" />
 
 
 
@@ -66,6 +68,7 @@ WITH Engagement AS(
 SELECT *, RANK() OVER(ORDER BY Promedio_Horas_Mes DESC) AS Ranking_Engagement
 FROM Engagement;
 ````
+<img width="559" height="359" alt="ask3" src="https://github.com/user-attachments/assets/8a9fd80a-7169-4c1a-823b-b2f24096291f" />
 
 
 
@@ -88,6 +91,7 @@ FROM Ranked_Peliculas
 WHERE Ranking=1
 ORDER BY Total_Usuarios;
 ````
+<img width="300" height="132" alt="ask4" src="https://github.com/user-attachments/assets/ff854183-ca9a-4c25-ab2d-55ad6b225e57" />
 
 
 ### 5. ¿Qué diferencias existen en el consumo de contenido entre usuarios de TV, móvil, computadora y otros dispositivos?
@@ -103,6 +107,7 @@ FROM netflix_customers
 GROUP BY device
 ORDER BY Promedio_Horas_Mes;
 ````
+<img width="606" height="113" alt="ask5" src="https://github.com/user-attachments/assets/2cbd7b00-2514-4b8f-b0a5-79921c3dbd55" />
 
 
 
@@ -125,6 +130,7 @@ GROUP BY CASE WHEN age < 20 THEN '18 - 30 años'
 			ELSE 'Más de 60 años' END, gender
 ORDER BY Rango_Edad;
 ````
+<img width="685" height="246" alt="ask6" src="https://github.com/user-attachments/assets/58eeea8c-3772-4145-b9a6-194686956203" />
 
 
 ### 7. ¿Cómo se relaciona el número de perfiles de una cuenta con sus horas de visualización y tarifa mensual?
@@ -136,6 +142,7 @@ FROM netflix_customers
 GROUP BY number_of_profiles, monthly_fee
 ORDER BY number_of_profiles;
 ````
+<img width="315" height="305" alt="ask7" src="https://github.com/user-attachments/assets/72e86a79-1cf5-407c-9fd7-b8ca2ac80cd0" />
 
 
 ### 8. ¿Cuál es la tasa general de abandono y cómo varía según el tipo de suscripción?
@@ -149,6 +156,7 @@ FROM netflix_customers
 GROUP BY subscription_type
 ORDER BY Tasa_Churn DESC;
 ````
+<img width="363" height="74" alt="ask8" src="https://github.com/user-attachments/assets/0e2e44d2-452b-4feb-9920-50ba12e66e6c" />
 
 
 ### 9. ¿Qué características diferencian a los clientes que abandonan de aquellos que permanecen, considerando inactividad, consumo y tarifa mensual?
@@ -168,6 +176,7 @@ SELECT CASE
 FROM netflix_customers
 GROUP BY churned;
 ````
+<img width="721" height="56" alt="ask9" src="https://github.com/user-attachments/assets/3417c766-bb14-42b4-b625-83cebd03e812" />
 
 
 ### 10. ¿Qué segmentos de clientes presentan mayor riesgo de abandono?
@@ -184,6 +193,7 @@ WITH Tasa_Abandono AS(
 SELECT *, RANK() OVER(ORDER BY Tasa_Abandono DESC) AS Ranking_Riesgo
 FROM Tasa_Abandono;
 ````
+<img width="688" height="322" alt="ask10" src="https://github.com/user-attachments/assets/d4e9d455-1b14-4c74-9f46-cded959b912b" />
 
 
 ---
