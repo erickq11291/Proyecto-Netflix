@@ -31,159 +31,158 @@ Utilizar SQL para analizar el comportamiento de los clientes de Netflix, identif
 
 ## 📈 Preguntas de Negocio Analizadas
 
-### 1. ¿Cuáles son los 10 productos más vendidos?
-Identificar los productos que generan el mayor volumen de ventas y contribuyen significativamente a los ingresos de la empresa.
+### 1. ¿Cómo se distribuyen los clientes entre los planes Basic, Standard y Premium, y qué participación representa cada uno sobre el total de suscriptores?
+Comprender la composición de la cartera de clientes y el peso relativo de cada plan dentro de la base total de suscriptores.
 
 ````sql
-SELECT TOP 10 Product_Name, SUM(Sales) AS Ventas_Totales
-FROM Orders
-GROUP BY Product_Name
-ORDER BY Ventas_Totales DESC;
-
+SELECT subscription_type AS Tipo_Suscripcion, COUNT(*) AS Total_Usuarios, CAST(COUNT(*)*100.0/SUM(COUNT(*)) OVER() AS DECIMAL(5,2)) AS Porcentaje_Usuarios
+FROM netflix_customers
+GROUP BY subscription_type;
 ````
 
 
 
-### 2. ¿Qué clientes generan más ingresos para la empresa?
+### 2. ¿Qué regiones concentran la mayor cantidad de suscriptores y cuáles generan más ingresos estimados?
+Identificar los mercados más importantes para la plataforma considerando tanto volumen de clientes como potencial de ingresos.
 
-Determinar qué clientes tienen el mayor impacto en las ventas totales.
 ````sql
-SELECT TOP 5 Customer_Name, SUM(Sales) AS Monto_Gastado
-FROM Orders
-GROUP BY Customer_Name
-ORDER BY Monto_Gastado DESC;
+SELECT region, COUNT(*) AS Total_Usuarios, CAST(AVG(monthly_fee) AS DECIMAL(5,2)) AS Tarifa_Promedio
+FROM netflix_customers
+GROUP BY region
+ORDER BY Tarifa_Promedio DESC;
 ````
 
 
 
-### 3. ¿Qué porcentaje de las ventas totales aporta cada región?
+### 3. ¿Qué perfiles de usuarios presentan los niveles de engagement más altos dentro de la plataforma?
 
-Analizar la distribución geográfica de los ingresos e identificar las regiones más importantes para el negocio.
+Identificar qué combinaciones de plan de suscripción y región están asociadas con los mayores niveles de consumo e interacción dentro de Netflix.
 ````sql
-SELECT Region, SUM(Sales) AS Total_Ventas, ROUND(SUM(Sales)*100/SUM(SUM(Sales)) OVER(),2) AS Porcentaje_Ventas
-FROM Orders
-GROUP BY Region
-ORDER BY Porcentaje_Ventas;
-````
-
-
-
-### 4. ¿Cómo han evolucionado las ventas a lo largo de los años?
-
-Evaluar el crecimiento o disminución de las ventas mediante una comparación año contra año.
-````sql
-WITH Ventas_Anuales AS(
-	SELECT YEAR(Order_Date) AS Año, SUM(Sales) AS Ventas_Totales
-	FROM Orders
-	GROUP BY YEAR(Order_Date)
+WITH Engagement AS(
+	SELECT subscription_type AS Tipo_Suscripcion, region, CAST(AVG(watch_hours) AS DECIMAL(5,2)) AS Promedio_Horas_Mes, AVG(number_of_profiles) AS Promedio_Perfiles
+	FROM netflix_customers
+	GROUP BY subscription_type, region
 )
-SELECT Año, Ventas_Totales,
-		LAG(Ventas_Totales) OVER(ORDER BY Año) AS Año_Anterior,
-		Ventas_Totales - LAG(Ventas_Totales) OVER(ORDER BY Año) AS Diferencia_Ventas,
-		ROUND(
-			(Ventas_Totales-LAG(Ventas_Totales) OVER(ORDER BY Año))/LAG(Ventas_Totales) OVER(ORDER BY Año)*100,2
-		) AS Porcentaje_Crecimiento
-FROM Ventas_Anuales;
+SELECT *, RANK() OVER(ORDER BY Promedio_Horas_Mes DESC) AS Ranking_Engagement
+FROM Engagement;
 ````
 
 
 
-### 5. ¿Qué categorías de productos generan más beneficio?
+### 4. ¿Cuál es el género favorito más popular dentro de cada región?
 
-Identificar qué categorías aportan la mayor rentabilidad al negocio.
+Identificar las preferencias de contenido predominantes en cada mercado y detectar diferencias regionales en los gustos de los usuarios.
 ````sql
-SELECT Category, SUM(Profit) AS Beneficio_Total
-FROM Orders
-GROUP BY Category
-ORDER BY Beneficio_Total;
-````
-
-
-
-### 6. ¿Qué productos tienen el mayor margen de beneficio?
-
-Determinar qué productos son más eficientes generando ganancias en relación con sus ventas.
-````sql
-SELECT  TOP 10 Product_Name, SUM(Sales) AS Ventas_Totales, SUM(Profit) AS Ganancia, ROUND(SUM(Profit)*100/SUM(Sales),2) AS Ganancia_Total
-FROM Orders
-GROUP BY Product_Name
-ORDER BY Ganancia_Total DESC;
-````
-
-
-### 7. ¿Cómo afectan los descuentos a la rentabilidad?
-
-Analizar el impacto de los diferentes niveles de descuento sobre los beneficios obtenidos.
-````sql
-SELECT CASE
-			WHEN Discount = 0 THEN '0%'
-			WHEN Discount <= 0.1 THEN '0% - 10%'
-			WHEN Discount <= 0.2 THEN '11% - 20%'
-			WHEN Discount <= 0.3 THEN '21% - 30%'
-			ELSE 'Más del 30%'
-		END AS Porcentaje_Descuento, COUNT(*) AS Cantidad_Pedidos, ROUND(AVG(Profit),2) AS Promedio_Ganancia, ROUND(SUM(Profit),2) AS Total_Ganancia
-FROM Orders
-GROUP BY CASE
-			WHEN Discount = 0 THEN '0%'
-			WHEN Discount <= 0.1 THEN '0% - 10%'
-			WHEN Discount <= 0.2 THEN '11% - 20%'
-			WHEN Discount <= 0.3 THEN '21% - 30%'
-			ELSE 'Más del 30%'
-		END
-ORDER BY Porcentaje_Descuento;
-````
-
-
-### 8. ¿Qué clientes realizan más pedidos?
-
-Identificar los clientes más frecuentes y comprender mejor el comportamiento de compra.
-````sql
-SELECT TOP 10 Customer_Name, COUNT(DISTINCT Order_ID) AS Cantidad_Pedidos
-FROM Orders
-GROUP BY Customer_Name
-ORDER BY Cantidad_Pedidos DESC;
-````
-
-
-### 9. ¿Cuál fue el producto más vendido de cada año?
-
-Detectar qué productos lideraron las ventas en cada periodo anual.
-````sql
-WITH Ventas_Anuales AS(
-	SELECT YEAR(Order_Date) AS Año, Product_Name, SUM(Sales) AS Ventas_Totales
-	FROM Orders
-	GROUP BY YEAR(Order_Date), Product_Name
-), Ranked_Productos AS (
-	SELECT Año, Product_Name, Ventas_Totales, ROW_NUMBER() OVER(
-		PARTITION BY Año
-		ORDER BY Ventas_Totales DESC) AS Ranking 
- 	FROM Ventas_Anuales
+WITH Peliculas_Favoritas AS (
+	SELECT region, favorite_genre AS Genero_Favorito, COUNT(*) AS Total_Usuarios
+	FROM netflix_customers
+	GROUP BY region, favorite_genre
+), Ranked_Peliculas AS (
+	SELECT region, Genero_Favorito, Total_Usuarios, ROW_NUMBER() OVER(
+		PARTITION BY region
+		ORDER BY Total_Usuarios DESC) AS Ranking
+	FROM Peliculas_Favoritas
 )
-SELECT Año, Product_Name, Ventas_Totales
-FROM Ranked_Productos
-WHERE Ranking =1
-ORDER BY Año;
+SELECT region, Genero_Favorito, Total_Usuarios
+FROM Ranked_Peliculas
+WHERE Ranking=1
+ORDER BY Total_Usuarios;
 ````
 
 
-### 10. ¿Qué productos mantuvieron un crecimiento sostenido durante tres años consecutivos?
+### 5. ¿Qué diferencias existen en el consumo de contenido entre usuarios de TV, móvil, computadora y otros dispositivos?
 
-Identificar productos con tendencias de crecimiento consistentes a largo plazo.
+Comparar los hábitos de visualización según el dispositivo utilizado para acceder a la plataforma.
 ````sql
-WITH Ventas_Anuales AS (
-	SELECT Product_Name, SUM(Sales) AS Total_Ventas, YEAR(Order_Date) AS Año
-	FROM Orders
-	GROUP BY Product_Name,YEAR(Order_Date)
-),
-Historial_Ventas AS (
-					SELECT Product_Name, Año, Total_Ventas,
-							LAG(Total_Ventas, 1) OVER(PARTITION BY Product_Name ORDER BY Año) AS Hace_Un_Año,
-							LAG(Total_Ventas, 2) OVER(PARTITION BY Product_Name ORDER BY Año) AS Hace_Dos_Años
-					FROM Ventas_Anuales
+SELECT device AS Dispositivo, COUNT(*) AS Total_Usuarios,
+		CAST(AVG(watch_hours) AS DECIMAL(5,2)) AS Promedio_Horas_Mes,
+		AVG(last_login_days) AS Promedio_Dias_Ultimo_Login,
+		AVG(number_of_profiles) AS Promedio_Cantidad_Perfiles
+		
+FROM netflix_customers
+GROUP BY device
+ORDER BY Promedio_Horas_Mes;
+````
+
+
+
+### 6. ¿Qué diferencias existen en el comportamiento de consumo entre grupos de edad y género?
+
+Analizar cómo varían las horas de visualización y las preferencias de contenido entre distintos perfiles demográficos.
+````sql
+SELECT CASE WHEN age < 20 THEN '18 - 30 años'
+			WHEN age < 40 THEN '30 - 45 años'
+			WHEN age < 60 THEN '45 - 60 años'
+			ELSE 'Más de 60 años' END AS Rango_Edad,
+		gender, COUNT(*) AS Total_Usuarios,
+		CAST(AVG(watch_hours) AS DECIMAL(5,2)) AS Promedio_Horas_Mes,
+		AVG(last_login_days) AS Promedio_Dias_Ultimo_Login,
+		AVG(number_of_profiles) AS Promedio_Cantidad_Perfiles
+FROM netflix_customers
+GROUP BY CASE WHEN age < 20 THEN '18 - 30 años'
+			WHEN age < 40 THEN '30 - 45 años'
+			WHEN age < 60 THEN '45 - 60 años'
+			ELSE 'Más de 60 años' END, gender
+ORDER BY Rango_Edad;
+````
+
+
+### 7. ¿Cómo se relaciona el número de perfiles de una cuenta con sus horas de visualización y tarifa mensual?
+
+Explorar si las cuentas con más perfiles presentan patrones diferentes de consumo y gasto.
+````sql
+SELECT number_of_profiles AS Cantidad_Perfiles, monthly_fee AS Tarifa_Mensual, SUM(watch_hours) AS Horas_Contenido
+FROM netflix_customers
+GROUP BY number_of_profiles, monthly_fee
+ORDER BY number_of_profiles;
+````
+
+
+### 8. ¿Cuál es la tasa general de abandono y cómo varía según el tipo de suscripción?
+
+Medir el nivel de churn de la plataforma y determinar si ciertos planes presentan mayores problemas de retención.
+````sql
+SELECT subscription_type AS Tipo_Suscripcion, COUNT(*) AS Total_Usuarios,
+		SUM(CASE WHEN churned = 1 THEN 1 ELSE 0 END) AS Total_Churn,
+		CAST(SUM(CASE WHEN churned = 1 THEN 1 ELSE 0 END)*100.0/COUNT(*) AS DECIMAL(5,2)) AS Tasa_Churn
+FROM netflix_customers
+GROUP BY subscription_type
+ORDER BY Tasa_Churn DESC;
+````
+
+
+### 9. ¿Qué características diferencian a los clientes que abandonan de aquellos que permanecen, considerando inactividad, consumo y tarifa mensual?
+
+Detectar patrones de comportamiento asociados al abandono y comprender qué factores pueden influir en la decisión de cancelar la suscripción.
+````sql
+SELECT CASE 
+			WHEN churned=1 THEN 'Abandona'
+			WHEN churned=0 THEN 'Permanece'
+			END AS Churn,
+	
+		COUNT(churned) AS Total_Usuarios,
+		CAST(COUNT(*)*100.0/SUM(COUNT(*)) OVER() AS DECIMAL(5,2)) AS Tasa_Abandono,
+		AVG(last_login_days) AS Promedio_Dias_Ultimo_Login,
+		CAST(AVG(watch_hours) AS DECIMAL(5,2)) AS Promedio_Horas_Consumo,
+		CAST(AVG(monthly_fee) AS DECIMAL(5,2)) AS Promedio_Tarifa_Mensual
+FROM netflix_customers
+GROUP BY churned;
+````
+
+
+### 10. ¿Qué segmentos de clientes presentan mayor riesgo de abandono?
+
+Identificar grupos específicos de usuarios con alta probabilidad de churn para orientar futuras estrategias de retención y fidelización.
+````sql
+WITH Tasa_Abandono AS(
+	SELECT subscription_type AS Tipo_Suscripcion, device AS Dispositivo, region, COUNT(*) AS Total_Usuarios,
+			SUM(CASE WHEN churned=1 THEN 1 ELSE 0 END) AS Usuarios_Abandonaron,
+			CAST(SUM(CASE WHEN churned=1 THEN 1 ELSE 0 END) *100.0/COUNT(*) AS DECIMAL(5,2)) AS Tasa_Abandono
+	FROM netflix_customers
+	GROUP BY subscription_type, device, region
 )
-SELECT Product_Name, Año, Total_Ventas, Hace_Un_Año, Hace_Dos_Años
-FROM Historial_Ventas
-WHERE Total_Ventas>Hace_Un_Año AND Hace_Un_Año>Hace_Dos_Años;
+SELECT *, RANK() OVER(ORDER BY Tasa_Abandono DESC) AS Ranking_Riesgo
+FROM Tasa_Abandono;
 ````
 
 
