@@ -1,5 +1,4 @@
 # 🎬 Netflix: Comportamiento de usuarios y análisis de abandono
-Comportamiento de clientes y análisis de abandono
 
 ## 📌 Descripción del Proyecto
 
