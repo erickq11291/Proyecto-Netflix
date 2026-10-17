@@ -196,3 +196,10 @@ FROM Tasa_Abandono;
 
 
 ---
+
+## 👨‍💻 Autor
+
+**Erick Quispe**
+
+- LinkedIn: [www.linkedin.com/in/erick-joseph-quispe-baca/](https://www.linkedin.com/in/erickjquispe/?isSelfProfile=true)
+- GitHub: https://github.com/erickq11291
